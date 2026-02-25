@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: s3-debug-mc
+  namespace: openshift-dr-system # namespace where ramen pod is running 
+spec:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  containers:
+  - name: s3-debug-mc
+    image: minio/mc
+    stdin: true
+    tty: true
+
+    env:
+    - name: HOME
+      value: /home/nonroot
+
+    workingDir: /home/nonroot
+
+    command: 
+      - /bin/sh
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+
+    volumeMounts:
+    - name: home
+      mountPath: /home/nonroot
+
+    - name: trusted-ca
+      mountPath: /etc/pki/ca-trust/extracted/pem
+      readOnly: true
+
+  volumes:
+  - name: home
+    emptyDir: {}
+
+  - name: trusted-ca
+    configMap:
+      name: openshift-trusted-cabundle
+      items:
+      - key: ca-bundle.crt
+        path: tls-ca-bundle.pem
